@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UzNomber Clickers</title>
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(to bottom, #111, #333);
+    color: gold;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    height: 100vh;
+    overflow: hidden;
+}
+
+#score {
+    font-size: 28px;
+    margin: 20px;
+}
+
+#clickerContainer {
+    position: relative;
+    width: 250px;
+    height: 250px;
+    margin-top: 20px;
+}
+
+#clicker {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background-color: #444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    cursor: pointer;
+    color: gold;
+    font-weight: bold;
+    transition: transform 0.2s;
+}
+
+.plusOne {
+    position: absolute;
+    font-size: 26px;
+    color: yellow;
+    font-weight: bold;
+    animation: rise 1s forwards;
+}
+
+@keyframes rise {
+    0% {opacity: 1; transform: translateY(0);}
+    100% {opacity: 0; transform: translateY(-50px);}
+}
+
+#limitBarContainer {
+    width: 320px;
+    height: 30px;
+    background-color: gold;
+    border-radius: 12px;
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: black;
+}
+
+#bottomPanel {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.panelButton {
+    padding: 10px 20px;
+    background-color: #666;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    color: white;
+    font-size: 16px;
+    transition: background 0.3s;
+}
+.panelButton:hover {
+    background-color: #888;
+}
+
+.panel {
+    display: none;
+    margin-top: 10px;
+    width: 90%;
+    max-width: 400px;
+    padding: 20px;
+    background-color: #222;
+    border-radius: 15px;
+    color: white;
+    animation: fadeIn 0.4s;
+}
+@keyframes fadeIn {
+    from {opacity: 0; transform: scale(0.9);}
+    to {opacity: 1; transform: scale(1);}
+}
+
+.alert {
+    font-weight: bold;
+    margin-top: 10px;
+    opacity: 1;
+    transition: opacity 2s ease-out;
+}
+
+.greenButton {
+    background-color: green;
+    color: white;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+</style>
+</head>
+<body>
+
+<div id="score">0</div>
+
+<div id="clickerContainer">
+    <div id="clicker">UzNomber Clickers</div>
+</div>
+
+<div id="limitBarContainer">
+    <div id="limitText">1000/1000</div>
+</div>
+
+<div id="bottomPanel">
+    <button class="panelButton" onclick="togglePanel('servicesPanel')">Xizmatlar</button>
+    <button class="panelButton" onclick="togglePanel('sellPanel')">Sotuv</button>
+    <button class="panelButton" onclick="togglePanel('promoPanel')">Promokod</button>
+</div>
+
+<!-- Xizmatlar paneli -->
+<div id="servicesPanel" class="panel">
+    <h3>Xizmatlar</h3>
+    <button class="greenButton" onclick="buyDoubleClick()">2x 30s (150 Click)</button>
+    <p id="doubleAlert" class="alert"></p>
+    <button class="greenButton" onclick="increaseLimit()">Limitni oshirish (<span id="limitPrice">250</span> Click)</button>
+    <p id="limitAlert" class="alert"></p>
+</div>
+
+<!-- Sotuv paneli -->
+<div id="sellPanel" class="panel">
+    <h3>Sotuv</h3>
+    <p>1 click = 0.01 $</p>
+    <input type="number" id="clickerInput" placeholder="Clicklar soni">
+    <button onclick="calculateDollar()">Hisoblash</button>
+    <p>Qiymat: <span id="dollarValue">0</span> $</p>
+    <button class="greenButton" onclick="sellClicks()">Sotish</button>
+    <p id="sellAlert" class="alert"></p>
+</div>
+
+<!-- Promokod paneli -->
+<div id="promoPanel" class="panel">
+    <h3>Promokod</h3>
+    <input type="text" id="promoInput" placeholder="Promokodni kiriting">
+    <button onclick="usePromo()">Tasdiqlash</button>
+    <p id="promoAlert" class="alert"></p>
+</div>
+
+<script>
+let clickers = 0;
+let clickValue = 1;
+let limit = 1000;
+let maxLimit = 1000;
+let limitPrice = 250;
+let usedPromos = [];
+
+const scoreDiv = document.getElementById('score');
+const clickerElem = document.getElementById('clicker');
+const clickerContainer = document.getElementById('clickerContainer');
+const limitText = document.getElementById('limitText');
+
+clickerElem.addEventListener('click', () => {
+    if(limit > 0){
+        clickers += clickValue;
+        limit--;
+        updateLimit();
+        showPlusOne();
+        updateScore();
+        clickerElem.style.transform = 'scale(0.9)';
+        setTimeout(()=> clickerElem.style.transform = 'scale(1)', 200);
+    }
+});
+
+function showPlusOne() {
+    const plus = document.createElement('div');
+    plus.classList.add('plusOne');
+    plus.innerText = '+' + clickValue;
+    plus.style.left = Math.random() * 180 + 'px';
+    plus.style.top = Math.random() * 180 + 'px';
+    clickerContainer.appendChild(plus);
+    setTimeout(() => plus.remove(), 1000);
+}
+
+function updateScore(){
+    scoreDiv.innerText = `${clickers}`;
+}
+
+function togglePanel(panelId){
+    const panel = document.getElementById(panelId);
+    if(panel.style.display === 'block'){
+        panel.style.display = 'none';
+    } else {
+        document.querySelectorAll('.panel').forEach(p=>p.style.display='none');
+        panel.style.display = 'block';
+    }
+}
+
+function calculateDollar(){
+    const input = document.getElementById('clickerInput').value;
+    const dollarValue = (input * 0.01).toFixed(2);
+    document.getElementById('dollarValue').innerText = dollarValue;
+}
+
+function buyDoubleClick(){
+    const alertBox = document.getElementById('doubleAlert');
+    if(clickers >= 150){
+        clickers -= 150;
+        clickValue = 2;
+        updateScore();
+        showMessage(alertBox, "2x aktiv 30s davomida!", "green");
+        setTimeout(()=>{
+            clickValue = 1;
+        },30000);
+    } else {
+        showMessage(alertBox, "Click yetarli emas!", "red");
+    }
+}
+
+function increaseLimit(){
+    const alertBox = document.getElementById('limitAlert');
+    if(clickers >= limitPrice){
+        clickers -= limitPrice;
+        maxLimit += 500;
+        limitPrice += 100;
+        document.getElementById('limitPrice').innerText = limitPrice;
+        updateScore();
+        updateLimit();
+    } else {
+        showMessage(alertBox, "Click yetarli emas!", "red");
+    }
+}
+
+function sellClicks(){
+    const alertBox = document.getElementById('sellAlert');
+    showMessage(alertBox, "Sotish imkoniyati tez orada paydo bo'ladi!", "red");
+}
+
+function updateLimit(){
+    limitText.innerText = `${limit}/${maxLimit}`;
+}
+
+// Limit asta-sekin tiklanadi
+setInterval(()=>{
+    if(limit < maxLimit){
+        limit++;
+        updateLimit();
+    }
+}, 1000);
+
+function usePromo(){
+    const code = document.getElementById('promoInput').value.trim().toLowerCase();
+    const promoAlert = document.getElementById('promoAlert');
+
+    if(usedPromos.includes(code)){
+        showMessage(promoAlert, "Bu promokod allaqachon ishlatilgan!", "red");
+        return;
+    }
+
+    if(code === "mal1kuzb"){
+        clickers += 350;
+        usedPromos.push(code);
+        showMessage(promoAlert, "+350 click qo'shildi!", "green");
+    } else if(code === "uznomer"){
+        clickers += 500;
+        usedPromos.push(code);
+        showMessage(promoAlert, "+500 click qo'shildi!", "green");
+    } else if(code === "lumivara"){
+        clickers += 150000;
+        usedPromos.push(code);
+        showMessage(promoAlert, "+150000 click qo'shildi!", "green");
+    } else {
+        showMessage(promoAlert, "Noto‘g‘ri promokod!", "red");
+    }
+    updateScore();
+}
+
+// Yozuvlarni ko'rsatish va asta-sekin yo'q qilish
+function showMessage(element, message, color){
+    element.innerText = message;
+    element.style.color = color;
+    element.style.opacity = 1;
+    setTimeout(()=> element.style.opacity = 0, 2000);
+}
+</script>
+
+</body>
+</html>
